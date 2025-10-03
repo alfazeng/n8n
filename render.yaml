@@ -1,10 +1,10 @@
 # render.yaml
-# Blueprint final alineado con la documentación oficial de Render.
+# Blueprint de producción para n8n, con configuración a prueba de futuro.
 
 # 1. Base de Datos
 databases:
   - name: n8n-postgres
-    plan: free
+    plan: free # Cambia a 'starter' o superior para persistencia real.
     databaseName: n8n
     user: n8n_user
 
@@ -13,10 +13,9 @@ services:
   - type: web
     name: n8n
     plan: starter
-    # CORRECCIÓN FINAL: Se cambia 'docker' por 'image' según la documentación.
     runtime: image
     image:
-      url: n8nio/n8n # Le decimos a Render qué imagen pre-construida usar.
+      url: n8nio/n8n
     healthCheckPath: /healthz
     envVars:
       # --- Conexión a la Base de Datos ---
@@ -56,3 +55,11 @@ services:
         value: "true"
       - key: EXECUTIONS_DATA_MAX_AGE
         value: "2160"
+
+      # --- NUEVO: Variables para Futura Compatibilidad y Seguridad ---
+      - key: N8N_RUNNERS_ENABLED
+        value: "true"
+      - key: N8N_BLOCK_ENV_ACCESS_IN_NODE
+        value: "false"
+      - key: N8N_GIT_NODE_DISABLE_BARE_REPOS
+        value: "true"
