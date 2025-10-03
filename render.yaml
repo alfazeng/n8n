@@ -1,7 +1,3 @@
-# render.yaml
-# Blueprint de producción para n8n, con configuración a prueba de futuro.
-
-# 1. Base de Datos
 databases:
   - name: n8n-postgres
     plan: free # Cambia a 'starter' o superior para persistencia real.
