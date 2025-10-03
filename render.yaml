@@ -1,5 +1,6 @@
 # render.yaml
-# Blueprint para desplegar n8n en Render.com (v5, sintaxis corregida)
+# Blueprint para desplegar n8n en Render.com (v6, Mínimo Viable)
+# Se elimina Redis para maximizar la compatibilidad con el plan gratuito.
 
 # 1. Definición de la Infraestructura de Base de Datos
 databases:
@@ -10,14 +11,6 @@ databases:
 
 # 2. Definición de los Servicios de Aplicación
 services:
-  # Servicio de Redis (con runtime explícito para validación)
-  - type: pserv
-    name: n8n-redis
-    runtime: docker
-    image:
-      url: redis:7
-    plan: free
-
   # Servicio Web Principal de n8n
   - type: web
     name: n8n
@@ -53,17 +46,6 @@ services:
           property: password
       - key: DB_POSTGRESDB_SSL
         value: "false"
-
-      # --- Conexión a Redis ---
-      - key: N8N_CACHE_ENABLED
-        value: "true"
-      - key: QUEUE_BULL_REDIS_HOST
-        fromService:
-          type: pserv
-          name: n8n-redis
-          envVarKey: INTERNAL_HOST
-      - key: QUEUE_BULL_REDIS_PORT
-        value: "6379"
 
       # --- Configuración General de n8n ---
       - key: N8N_HOST
