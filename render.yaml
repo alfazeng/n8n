@@ -1,26 +1,25 @@
 # render.yaml
-# Blueprint para desplegar n8n en Render.com (v8, Corrección final del validador)
+# Blueprint para desplegar n8n usando la imagen oficial pre-construida.
 
-# 1. Definición de la Infraestructura de Base de Datos
+# 1. Definición de la Base de Datos
 databases:
   - name: n8n-postgres
     plan: free
     databaseName: n8n
     user: n8n_user
 
-# 2. Definición de los Servicios de Aplicación
+# 2. Definición de los Servicios
 services:
   # Servicio Web Principal de n8n
   - type: web
     name: n8n
     plan: free
-    # CORRECCIÓN: Se añade 'runtime: docker' de nuevo para cumplir con la validación.
     runtime: docker
     image:
-      url: n8nio/n8n # Se sigue usando la imagen oficial y pre-compilada.
+      url: n8nio/n8n # Usa la imagen oficial de n8n
     healthCheckPath: /healthz
     envVars:
-      # --- Conexión a la Base de Datos Gestionada ---
+      # --- Conexión a la Base de Datos ---
       - key: DB_TYPE
         value: postgresdb
       - key: DB_POSTGRESDB_HOST
