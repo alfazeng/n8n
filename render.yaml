@@ -1,5 +1,5 @@
 # render.yaml
-# Blueprint que IGNORA el Dockerfile y usa la IMAGEN PRE-CONSTRUIDA.
+# Blueprint final alineado con la documentación oficial de Render.
 
 # 1. Base de Datos
 databases:
@@ -13,9 +13,10 @@ services:
   - type: web
     name: n8n
     plan: starter
-    runtime: docker # Requerido por el validador de Render
+    # CORRECCIÓN FINAL: Se cambia 'docker' por 'image' según la documentación.
+    runtime: image
     image:
-      url: n8nio/n8n
+      url: n8nio/n8n # Le decimos a Render qué imagen pre-construida usar.
     healthCheckPath: /healthz
     envVars:
       # --- Conexión a la Base de Datos ---
