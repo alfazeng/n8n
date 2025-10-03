@@ -1,32 +1,31 @@
 # render.yaml
-# Blueprint para desplegar n8n en el plan GRATUITO de Render.com
-# ADVERTENCIA: La base de datos y Redis en esta configuración no son persistentes.
-# Los datos se borrarán en cada reinicio del servicio. Apto solo para pruebas.
+# Blueprint para desplegar n8n en Render.com (v3, estructuralmente correcto)
+# Separa la definición de la base de datos de los servicios de aplicación.
 
-services:
-  # 1. Base de Datos PostgreSQL Gestionada por Render (compatible con el plan gratuito)
-  - type: db
-    name: n8n-postgres
-    # Para el tipo 'db', el plan gratuito es la opción por defecto.
+# 1. Definición de la Infraestructura de Base de Datos
+databases:
+  - name: n8n-postgres
+    # El plan gratuito para bases de datos gestionadas se activa por defecto.
     plan: free
     databaseName: n8n
     user: n8n_user
 
-  # 2. Redis para caché (Sin disco, datos efímeros)
+# 2. Definición de los Servicios de Aplicación
+services:
+  # Servicio de Redis (Sin disco en el plan gratuito)
   - type: pserv
     name: n8n-redis
     image:
       url: redis:7
     plan: free
-    # Se ha eliminado el bloque 'disk' para cumplir con las restricciones del plan gratuito.
 
-  # 3. Servicio Web Principal de n8n
+  # Servicio Web Principal de n8n
   - type: web
     name: n8n
     runtime: docker
     repo: https://github.com/alfazeng/n8n.git # Apunta a tu fork
+    branch: master # Especificamos tu rama principal
     autoDeploy: true
-    branch: master # Especificamos la rama correcta
     dockerfilePath: ./docker/images/n8n/Dockerfile
     plan: free
     dockerCommand: "n8n"
@@ -36,25 +35,22 @@ services:
       - key: DB_TYPE
         value: postgresdb
       - key: DB_POSTGRESDB_HOST
-        fromService:
-          type: db
+        # 'fromDatabase' es la forma correcta de referenciar una base de datos definida arriba.
+        fromDatabase:
           name: n8n-postgres
           property: host
       - key: DB_POSTGRESDB_PORT
         value: "5432"
       - key: DB_POSTGRESDB_DATABASE
-        fromService:
-          type: db
+        fromDatabase:
           name: n8n-postgres
           property: database
       - key: DB_POSTGRESDB_USER
-        fromService:
-          type: db
+        fromDatabase:
           name: n8n-postgres
           property: user
       - key: DB_POSTGRESDB_PASSWORD
-        fromService:
-          type: db
+        fromDatabase:
           name: n8n-postgres
           property: password
       - key: DB_POSTGRESDB_SSL
