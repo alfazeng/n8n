@@ -1,78 +1,64 @@
 # render.yaml
-# Blueprint para desplegar n8n en Render.com
-# Incluye: Base de datos PostgreSQL, Redis para caché y el servicio web de n8n.
+# Blueprint para desplegar n8n en el plan GRATUITO de Render.com
+# ADVERTENCIA: La base de datos y Redis en esta configuración no son persistentes.
+# Los datos se borrarán en cada reinicio del servicio. Apto solo para pruebas.
 
 services:
-  # 1. Base de Datos PostgreSQL para persistencia de datos
-  - type: pserv
+  # 1. Base de Datos PostgreSQL Gestionada por Render (compatible con el plan gratuito)
+  - type: db
     name: n8n-postgres
-    image:
-      url: postgres:15
+    # Para el tipo 'db', el plan gratuito es la opción por defecto.
     plan: free
-    disk:
-      name: n8n-postgres-data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 10
-    envVars:
-      - key: POSTGRES_DB
-        value: n8n
-      - key: POSTGRES_USER
-        value: n8n_user
-      - key: POSTGRES_PASSWORD
-        generateValue: true
+    databaseName: n8n
+    user: n8n_user
 
-  # 2. Redis para caché y gestión de colas (recomendado)
+  # 2. Redis para caché (Sin disco, datos efímeros)
   - type: pserv
     name: n8n-redis
     image:
       url: redis:7
     plan: free
-    disk:
-      name: n8n-redis-data
-      mountPath: /data
-      sizeGB: 1
+    # Se ha eliminado el bloque 'disk' para cumplir con las restricciones del plan gratuito.
 
   # 3. Servicio Web Principal de n8n
   - type: web
     name: n8n
-    # Usamos runtime: docker para construir desde el Dockerfile del repo.
     runtime: docker
-    # ¡IMPORTANTE! Asegúrate de que esta URL apunte a TU FORK.
-    repo: https://github.com/alfazeng/n8n.git
-    # Despliegue automático al hacer push a la rama principal (master en tu caso).
+    repo: https://github.com/alfazeng/n8n.git # Apunta a tu fork
     autoDeploy: true
+    branch: master # Especificamos la rama correcta
     dockerfilePath: ./docker/images/n8n/Dockerfile
-    plan: free # Considera "starter" o superior para producción.
+    plan: free
     dockerCommand: "n8n"
     healthCheckPath: /healthz
     envVars:
-      # --- Conexión a la Base de Datos ---
+      # --- Conexión a la Base de Datos Gestionada ---
       - key: DB_TYPE
         value: postgresdb
       - key: DB_POSTGRESDB_HOST
         fromService:
-          type: pserv
+          type: db
           name: n8n-postgres
-          envVarKey: INTERNAL_HOST
+          property: host
       - key: DB_POSTGRESDB_PORT
         value: "5432"
       - key: DB_POSTGRESDB_DATABASE
         fromService:
-          type: pserv
+          type: db
           name: n8n-postgres
-          envVarKey: POSTGRES_DB
+          property: database
       - key: DB_POSTGRESDB_USER
         fromService:
-          type: pserv
+          type: db
           name: n8n-postgres
-          envVarKey: POSTGRES_USER
+          property: user
       - key: DB_POSTGRESDB_PASSWORD
         fromService:
-          type: pserv
+          type: db
           name: n8n-postgres
-          envVarKey: POSTGRES_PASSWORD
+          property: password
       - key: DB_POSTGRESDB_SSL
-        value: "false" # La comunicación interna en Render no requiere SSL.
+        value: "false"
 
       # --- Conexión a Redis ---
       - key: N8N_CACHE_ENABLED
@@ -87,17 +73,14 @@ services:
 
       # --- Configuración General de n8n ---
       - key: N8N_HOST
-        # `RENDER_EXTERNAL_URL` es una variable que Render provee con la URL pública.
         value: ${RENDER_EXTERNAL_URL}
       - key: WEBHOOK_URL
         value: ${RENDER_EXTERNAL_URL}
       - key: GENERIC_TIMEZONE
-        # Ajusta a tu zona horaria: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
         value: "America/Caracas"
       - key: N8N_ENCRYPTION_KEY
-        # ¡CRÍTICO! Genera una clave segura para encriptar tus credenciales.
         generateValue: true
       - key: EXECUTIONS_DATA_PRUNE
         value: "true"
       - key: EXECUTIONS_DATA_MAX_AGE
-        value: "2160" # En horas (90 días)
+        value: "2160"
