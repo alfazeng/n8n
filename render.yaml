@@ -1,22 +1,17 @@
-# render.yaml
-# Blueprint para desplegar n8n usando la imagen oficial pre-construida.
-
-# 1. Definición de la Base de Datos
 databases:
   - name: n8n-postgres
-    plan: free
+    plan: free # Apto para el despliegue inicial
     databaseName: n8n
     user: n8n_user
 
-# 2. Definición de los Servicios
+# 2. Definición del Servicio Web
 services:
-  # Servicio Web Principal de n8n
   - type: web
     name: n8n
-    plan: free
+    plan: starter # <-- Importante: Mantenemos 'starter' aquí
     runtime: docker
     image:
-      url: n8nio/n8n # Usa la imagen oficial de n8n
+      url: n8nio/n8n # Usa la imagen oficial pre-construida
     healthCheckPath: /healthz
     envVars:
       # --- Conexión a la Base de Datos ---
