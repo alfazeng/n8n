@@ -1,0 +1,103 @@
+# render.yaml
+# Blueprint para desplegar n8n en Render.com
+# Incluye: Base de datos PostgreSQL, Redis para caché y el servicio web de n8n.
+
+services:
+  # 1. Base de Datos PostgreSQL para persistencia de datos
+  - type: pserv
+    name: n8n-postgres
+    image:
+      url: postgres:15
+    plan: free
+    disk:
+      name: n8n-postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+    envVars:
+      - key: POSTGRES_DB
+        value: n8n
+      - key: POSTGRES_USER
+        value: n8n_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # 2. Redis para caché y gestión de colas (recomendado)
+  - type: pserv
+    name: n8n-redis
+    image:
+      url: redis:7
+    plan: free
+    disk:
+      name: n8n-redis-data
+      mountPath: /data
+      sizeGB: 1
+
+  # 3. Servicio Web Principal de n8n
+  - type: web
+    name: n8n
+    # Usamos runtime: docker para construir desde el Dockerfile del repo.
+    runtime: docker
+    # ¡IMPORTANTE! Asegúrate de que esta URL apunte a TU FORK.
+    repo: https://github.com/alfazeng/n8n.git
+    # Despliegue automático al hacer push a la rama principal (master en tu caso).
+    autoDeploy: true
+    dockerfilePath: ./docker/images/n8n/Dockerfile
+    plan: free # Considera "starter" o superior para producción.
+    dockerCommand: "n8n"
+    healthCheckPath: /healthz
+    envVars:
+      # --- Conexión a la Base de Datos ---
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromService:
+          type: pserv
+          name: n8n-postgres
+          envVarKey: INTERNAL_HOST
+      - key: DB_POSTGRESDB_PORT
+        value: "5432"
+      - key: DB_POSTGRESDB_DATABASE
+        fromService:
+          type: pserv
+          name: n8n-postgres
+          envVarKey: POSTGRES_DB
+      - key: DB_POSTGRESDB_USER
+        fromService:
+          type: pserv
+          name: n8n-postgres
+          envVarKey: POSTGRES_USER
+      - key: DB_POSTGRESDB_PASSWORD
+        fromService:
+          type: pserv
+          name: n8n-postgres
+          envVarKey: POSTGRES_PASSWORD
+      - key: DB_POSTGRESDB_SSL
+        value: "false" # La comunicación interna en Render no requiere SSL.
+
+      # --- Conexión a Redis ---
+      - key: N8N_CACHE_ENABLED
+        value: "true"
+      - key: QUEUE_BULL_REDIS_HOST
+        fromService:
+          type: pserv
+          name: n8n-redis
+          envVarKey: INTERNAL_HOST
+      - key: QUEUE_BULL_REDIS_PORT
+        value: "6379"
+
+      # --- Configuración General de n8n ---
+      - key: N8N_HOST
+        # `RENDER_EXTERNAL_URL` es una variable que Render provee con la URL pública.
+        value: ${RENDER_EXTERNAL_URL}
+      - key: WEBHOOK_URL
+        value: ${RENDER_EXTERNAL_URL}
+      - key: GENERIC_TIMEZONE
+        # Ajusta a tu zona horaria: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+        value: "America/Caracas"
+      - key: N8N_ENCRYPTION_KEY
+        # ¡CRÍTICO! Genera una clave segura para encriptar tus credenciales.
+        generateValue: true
+      - key: EXECUTIONS_DATA_PRUNE
+        value: "true"
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: "2160" # En horas (90 días)
