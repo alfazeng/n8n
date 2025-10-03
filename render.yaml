@@ -1,20 +1,21 @@
 # render.yaml
-# Blueprint para desplegar n8n en Render.com (v3, estructuralmente correcto)
-# Separa la definición de la base de datos de los servicios de aplicación.
+# Blueprint para desplegar n8n en Render.com (v4, validación final)
+# Corrige el error de 'startCommand' en el servicio de Redis.
 
 # 1. Definición de la Infraestructura de Base de Datos
 databases:
   - name: n8n-postgres
-    # El plan gratuito para bases de datos gestionadas se activa por defecto.
     plan: free
     databaseName: n8n
     user: n8n_user
 
 # 2. Definición de los Servicios de Aplicación
 services:
-  # Servicio de Redis (Sin disco en el plan gratuito)
+  # Servicio de Redis (Corregido con runtime explícito)
   - type: pserv
     name: n8n-redis
+    # CORRECCIÓN: Se añade 'runtime: docker' para satisfacer al validador.
+    runtime: docker
     image:
       url: redis:7
     plan: free
@@ -23,8 +24,8 @@ services:
   - type: web
     name: n8n
     runtime: docker
-    repo: https://github.com/alfazeng/n8n.git # Apunta a tu fork
-    branch: master # Especificamos tu rama principal
+    repo: https://github.com/alfazeng/n8n.git
+    branch: master
     autoDeploy: true
     dockerfilePath: ./docker/images/n8n/Dockerfile
     plan: free
@@ -34,49 +35,4 @@ services:
       # --- Conexión a la Base de Datos Gestionada ---
       - key: DB_TYPE
         value: postgresdb
-      - key: DB_POSTGRESDB_HOST
-        # 'fromDatabase' es la forma correcta de referenciar una base de datos definida arriba.
-        fromDatabase:
-          name: n8n-postgres
-          property: host
-      - key: DB_POSTGRESDB_PORT
-        value: "5432"
-      - key: DB_POSTGRESDB_DATABASE
-        fromDatabase:
-          name: n8n-postgres
-          property: database
-      - key: DB_POSTGRESDB_USER
-        fromDatabase:
-          name: n8n-postgres
-          property: user
-      - key: DB_POSTGRESDB_PASSWORD
-        fromDatabase:
-          name: n8n-postgres
-          property: password
-      - key: DB_POSTGRESDB_SSL
-        value: "false"
-
-      # --- Conexión a Redis ---
-      - key: N8N_CACHE_ENABLED
-        value: "true"
-      - key: QUEUE_BULL_REDIS_HOST
-        fromService:
-          type: pserv
-          name: n8n-redis
-          envVarKey: INTERNAL_HOST
-      - key: QUEUE_BULL_REDIS_PORT
-        value: "6379"
-
-      # --- Configuración General de n8n ---
-      - key: N8N_HOST
-        value: ${RENDER_EXTERNAL_URL}
-      - key: WEBHOOK_URL
-        value: ${RENDER_EXTERNAL_URL}
-      - key: GENERIC_TIMEZONE
-        value: "America/Caracas"
-      - key: N8N_ENCRYPTION_KEY
-        generateValue: true
-      - key: EXECUTIONS_DATA_PRUNE
-        value: "true"
-      - key: EXECUTIONS_DATA_MAX_AGE
-        value: "2160"
+      - key: DB_POST<ctrl63>
