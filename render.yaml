@@ -14,7 +14,6 @@ services:
     name: n8n
     plan: starter
     runtime: docker # Requerido por el validador de Render
-    # LA CLAVE ESTÁ AQUÍ: 'image' le dice a Render que ignore el repo y Dockerfile
     image:
       url: n8nio/n8n
     healthCheckPath: /healthz
