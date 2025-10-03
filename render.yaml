@@ -1,6 +1,5 @@
 # render.yaml
-# Blueprint para desplegar n8n en Render.com (v6, Mínimo Viable)
-# Se elimina Redis para maximizar la compatibilidad con el plan gratuito.
+# Blueprint para desplegar n8n en Render.com (v8, Corrección final del validador)
 
 # 1. Definición de la Infraestructura de Base de Datos
 databases:
@@ -14,13 +13,11 @@ services:
   # Servicio Web Principal de n8n
   - type: web
     name: n8n
-    runtime: docker
-    repo: https://github.com/alfazeng/n8n.git # Apunta a tu fork
-    branch: master # Especificamos tu rama principal
-    autoDeploy: true
-    dockerfilePath: ./docker/images/n8n/Dockerfile
     plan: free
-    dockerCommand: "n8n"
+    # CORRECCIÓN: Se añade 'runtime: docker' de nuevo para cumplir con la validación.
+    runtime: docker
+    image:
+      url: n8nio/n8n # Se sigue usando la imagen oficial y pre-compilada.
     healthCheckPath: /healthz
     envVars:
       # --- Conexión a la Base de Datos Gestionada ---
