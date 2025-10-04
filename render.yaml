@@ -1,11 +1,29 @@
-databases:
-  - name: n8n-postgres
-    plan: free # Cambia a 'starter' o superior para persistencia real.
-    databaseName: n8n
-    user: n8n_user
+# render.yaml
+# Blueprint de PRODUCCIÓN para n8n con discos persistentes.
 
-# 2. Servicio Web
 services:
+  # 1. Base de Datos PostgreSQL como Servicio Privado con Disco Persistente
+  - type: pserv
+    name: n8n-postgres
+    runtime: docker
+    image:
+      url: postgres:15
+    # CAMBIO 1: Usamos el plan 'starter' que permite discos.
+    plan: starter
+    # CAMBIO 2: Añadimos el disco persistente. Aquí es donde se guardarán tus datos.
+    disk:
+      name: n8n-postgres-data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 10
+    envVars:
+      - key: POSTGRES_DB
+        value: n8n
+      - key: POSTGRES_USER
+        value: n8n_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+
+  # 2. Servicio Web Principal de n8n
   - type: web
     name: n8n
     plan: starter
@@ -14,31 +32,36 @@ services:
       url: n8nio/n8n
     healthCheckPath: /healthz
     envVars:
-      # --- Conexión a la Base de Datos ---
+      # --- Conexión a la Base de Datos PERSISTENTE ---
       - key: DB_TYPE
         value: postgresdb
+      # CAMBIO 3: Se cambia 'fromDatabase' por 'fromService' para apuntar al nuevo pserv.
       - key: DB_POSTGRESDB_HOST
-        fromDatabase:
+        fromService:
+          type: pserv
           name: n8n-postgres
-          property: host
+          envVarKey: INTERNAL_HOST
       - key: DB_POSTGRESDB_PORT
         value: "5432"
       - key: DB_POSTGRESDB_DATABASE
-        fromDatabase:
+        fromService:
+          type: pserv
           name: n8n-postgres
-          property: database
+          envVarKey: POSTGRES_DB
       - key: DB_POSTGRESDB_USER
-        fromDatabase:
+        fromService:
+          type: pserv
           name: n8n-postgres
-          property: user
+          envVarKey: POSTGRES_USER
       - key: DB_POSTGRESDB_PASSWORD
-        fromDatabase:
+        fromService:
+          type: pserv
           name: n8n-postgres
-          property: password
+          envVarKey: POSTGRES_PASSWORD
       - key: DB_POSTGRESDB_SSL
         value: "false"
 
-      # --- Configuración General de n8n ---
+      # --- Configuración General (se mantiene igual) ---
       - key: N8N_HOST
         value: ${RENDER_EXTERNAL_URL}
       - key: WEBHOOK_URL
@@ -51,8 +74,6 @@ services:
         value: "true"
       - key: EXECUTIONS_DATA_MAX_AGE
         value: "2160"
-
-      # --- NUEVO: Variables para Futura Compatibilidad y Seguridad ---
       - key: N8N_RUNNERS_ENABLED
         value: "true"
       - key: N8N_BLOCK_ENV_ACCESS_IN_NODE
